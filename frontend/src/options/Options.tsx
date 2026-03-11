@@ -56,6 +56,15 @@ export function Options() {
 }
 
 function SettingsPanel() {
+  const [backendUrl, setBackendUrl] = useState(localStorage.getItem("backend_url") || "http://localhost:8001");
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    localStorage.setItem("backend_url", backendUrl);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
   return (
     <div className="p-4">
       <h1 className="mb-4 text-xl font-bold">Settings</h1>
@@ -65,19 +74,14 @@ function SettingsPanel() {
           <input
             type="text"
             className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm"
-            defaultValue="http://localhost:8001"
+            value={backendUrl}
+            onChange={(e) => setBackendUrl(e.target.value)}
           />
           <p className="mt-1 text-xs text-muted-foreground">The URL of the Agent Skill backend server.</p>
         </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium">Model</label>
-          <input
-            type="text"
-            className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm"
-            defaultValue="gpt-4o"
-          />
-          <p className="mt-1 text-xs text-muted-foreground">Default LLM model for chat and skill creation.</p>
-        </div>
+        <Button onClick={handleSave}>
+          {saved ? "Saved!" : "Save Settings"}
+        </Button>
       </div>
     </div>
   );

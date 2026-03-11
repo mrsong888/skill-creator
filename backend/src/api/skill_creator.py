@@ -32,7 +32,7 @@ class InstallRequest(BaseModel):
 @router.post("/start")
 async def start_creation(req: StartRequest):
     settings = get_settings()
-    agent = AgentCore(model=settings.llm.model)
+    agent = AgentCore(model=settings.llm.model, api_key=settings.llm.api_key, base_url=settings.llm.base_url)
 
     async def event_generator():
         async for event in agent.run(

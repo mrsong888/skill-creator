@@ -9,8 +9,10 @@ from src.agent.tools import BUILT_IN_TOOLS, execute_tool
 
 
 class AgentCore:
-    def __init__(self, model: str = "gpt-4o", temperature: float = 0.7, max_tokens: int = 4096):
+    def __init__(self, model: str = "gpt-4o", api_key: str = "", base_url: str = "", temperature: float = 0.7, max_tokens: int = 4096):
         self.model = model
+        self.api_key = api_key
+        self.base_url = base_url
         self.temperature = temperature
         self.max_tokens = max_tokens
 
@@ -33,13 +35,18 @@ class AgentCore:
         llm_messages.extend(messages)
 
         for _ in range(max_tool_rounds):
-            response = await litellm.acompletion(
-                model=self.model,
-                messages=llm_messages,
-                tools=all_tools if all_tools else None,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
+            kwargs: dict[str, Any] = {
+                "model": self.model,
+                "messages": llm_messages,
+                "tools": all_tools if all_tools else None,
+                "temperature": self.temperature,
+                "max_tokens": self.max_tokens,
+            }
+            if self.api_key:
+                kwargs["api_key"] = self.api_key
+            if self.base_url:
+                kwargs["api_base"] = self.base_url
+            response = await litellm.acompletion(**kwargs)
 
             choice = response.choices[0]
             assistant_msg = choice.message

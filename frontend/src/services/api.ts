@@ -1,4 +1,12 @@
-const BASE_URL = "http://localhost:8001";
+function getBaseUrl(): string {
+  // 1. Check chrome.storage for user-configured URL
+  // 2. Fall back to default
+  return localStorage.getItem("backend_url") || "http://localhost:8001";
+}
+
+function baseUrl(): string {
+  return getBaseUrl();
+}
 
 // ---------- Chat ----------
 
@@ -15,7 +23,7 @@ export interface SSEEvent {
 }
 
 export async function* streamChat(req: ChatRequest): AsyncGenerator<SSEEvent> {
-  const response = await fetch(`${BASE_URL}/api/chat`, {
+  const response = await fetch(`${baseUrl()}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -70,12 +78,12 @@ export interface Message {
 }
 
 export async function getChatHistory(): Promise<ThreadSummary[]> {
-  const res = await fetch(`${BASE_URL}/api/chat/history`);
+  const res = await fetch(`${baseUrl()}/api/chat/history`);
   return res.json();
 }
 
 export async function getThreadMessages(threadId: string): Promise<Message[]> {
-  const res = await fetch(`${BASE_URL}/api/chat/${threadId}`);
+  const res = await fetch(`${baseUrl()}/api/chat/${threadId}`);
   return res.json();
 }
 
@@ -95,17 +103,17 @@ export interface SkillDetail extends SkillSummary {
 }
 
 export async function listSkills(): Promise<SkillSummary[]> {
-  const res = await fetch(`${BASE_URL}/api/skills`);
+  const res = await fetch(`${baseUrl()}/api/skills`);
   return res.json();
 }
 
 export async function getSkill(name: string): Promise<SkillDetail> {
-  const res = await fetch(`${BASE_URL}/api/skills/${name}`);
+  const res = await fetch(`${baseUrl()}/api/skills/${name}`);
   return res.json();
 }
 
 export async function updateSkillEnabled(name: string, enabled: boolean): Promise<void> {
-  await fetch(`${BASE_URL}/api/skills/${name}`, {
+  await fetch(`${baseUrl()}/api/skills/${name}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ enabled }),
@@ -113,7 +121,7 @@ export async function updateSkillEnabled(name: string, enabled: boolean): Promis
 }
 
 export async function deleteSkill(name: string): Promise<void> {
-  await fetch(`${BASE_URL}/api/skills/${name}`, { method: "DELETE" });
+  await fetch(`${baseUrl()}/api/skills/${name}`, { method: "DELETE" });
 }
 
 // ---------- Memory ----------
@@ -133,17 +141,17 @@ export interface MemoryData {
 }
 
 export async function getMemory(): Promise<MemoryData> {
-  const res = await fetch(`${BASE_URL}/api/memory`);
+  const res = await fetch(`${baseUrl()}/api/memory`);
   return res.json();
 }
 
 export async function reloadMemory(): Promise<MemoryData> {
-  const res = await fetch(`${BASE_URL}/api/memory/reload`, { method: "POST" });
+  const res = await fetch(`${baseUrl()}/api/memory/reload`, { method: "POST" });
   return res.json();
 }
 
 export async function updateMemory(data: Partial<MemoryData>): Promise<MemoryData> {
-  const res = await fetch(`${BASE_URL}/api/memory`, {
+  const res = await fetch(`${baseUrl()}/api/memory`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -161,14 +169,14 @@ export interface WorkspaceFile {
 }
 
 export async function listWorkspaceFiles(threadId: string): Promise<WorkspaceFile[]> {
-  const res = await fetch(`${BASE_URL}/api/workspace/${threadId}/files`);
+  const res = await fetch(`${baseUrl()}/api/workspace/${threadId}/files`);
   return res.json();
 }
 
 export async function uploadFile(threadId: string, file: File): Promise<{ filename: string; size: number }> {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await fetch(`${BASE_URL}/api/workspace/${threadId}/upload`, {
+  const res = await fetch(`${baseUrl()}/api/workspace/${threadId}/upload`, {
     method: "POST",
     body: formData,
   });

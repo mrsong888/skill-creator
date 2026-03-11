@@ -28,6 +28,8 @@ def get_agent() -> AgentCore:
     settings = get_settings()
     return AgentCore(
         model=settings.llm.model,
+        api_key=settings.llm.api_key,
+        base_url=settings.llm.base_url,
         temperature=settings.llm.temperature,
         max_tokens=settings.llm.max_tokens,
     )

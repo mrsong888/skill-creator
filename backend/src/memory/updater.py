@@ -48,20 +48,27 @@ async def run_memory_update(
     conversation: list[dict],
     store: MemoryStore,
     model: str = "gpt-4o",
+    api_key: str = "",
+    base_url: str = "",
 ) -> None:
     """Run LLM-driven memory update from a conversation."""
     memory = store.load()
     prompt = build_memory_update_prompt(conversation, memory)
 
-    response = await litellm.acompletion(
-        model=model,
-        messages=[
+    kwargs: dict = {
+        "model": model,
+        "messages": [
             {"role": "system", "content": MEMORY_UPDATE_SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
         ],
-        temperature=0.3,
-        max_tokens=2000,
-    )
+        "temperature": 0.3,
+        "max_tokens": 2000,
+    }
+    if api_key:
+        kwargs["api_key"] = api_key
+    if base_url:
+        kwargs["api_base"] = base_url
+    response = await litellm.acompletion(**kwargs)
 
     update = parse_memory_update_response(response.choices[0].message.content)
     memory = apply_memory_update(memory, update)

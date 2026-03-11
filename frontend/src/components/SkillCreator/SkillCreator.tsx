@@ -23,7 +23,8 @@ export function SkillCreator() {
     setIsStreaming(true);
 
     try {
-      const response = await fetch("http://localhost:8001/api/skill-creator/start", {
+      const backendUrl = localStorage.getItem("backend_url") || "http://localhost:8001";
+      const response = await fetch(`${backendUrl}/api/skill-creator/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: trimmed }),
