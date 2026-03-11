@@ -1,0 +1,14 @@
+llm:
+  model: gpt-4o
+  api_key: $OPENAI_API_KEY
+  temperature: 0.7
+  max_tokens: 4096
+
+memory:
+  enabled: true
+  debounce_seconds: 30
+  max_facts: 100
+
+skills:
+  public_path: skills/public
+  custom_path: skills/custom
