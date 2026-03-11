@@ -7,3 +7,5 @@ backend/data/
 node_modules/
 dist/
 .env
+node_modules/
+frontend/dist/

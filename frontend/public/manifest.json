@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Agent Skill Extension",
+  "version": "0.1.0",
+  "description": "AI Agent + Skill platform for internal company use",
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "options_page": "src/options/index.html",
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/index.ts"]
+    }
+  ],
+  "action": {
+    "default_title": "Agent Skill Extension",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
