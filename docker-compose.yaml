@@ -1,0 +1,15 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend/skills:/app/skills
+      - backend-data:/app/data
+    env_file: .env
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app
+
+volumes:
+  backend-data:
