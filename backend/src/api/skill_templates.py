@@ -42,6 +42,7 @@ class RenderResponse(BaseModel):
 class CreateRequest(BaseModel):
     variables: dict = Field(default_factory=dict)
     skill_name: str | None = None
+    content: str | None = None  # LLM-enhanced SKILL.md content from preview
 
 
 class CreateResponse(BaseModel):
@@ -157,10 +158,14 @@ async def create_from_template(name: str, req: CreateRequest):
     if template is None:
         raise HTTPException(status_code=404, detail=f"Template '{name}' not found")
 
-    try:
-        content = mgr.render(name, req.variables)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    # Use LLM-enhanced content from preview if provided, otherwise render from template
+    if req.content:
+        content = req.content
+    else:
+        try:
+            content = mgr.render(name, req.variables)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     is_valid, msg = validate_skill_md(content)
     if not is_valid:
@@ -189,17 +194,39 @@ async def create_from_template(name: str, req: CreateRequest):
     skill_dir.mkdir(parents=True)
     (skill_dir / "SKILL.md").write_text(content, encoding="utf-8")
 
+    # Write extra files (e.g. reference/*.md) if defined in the template
+    try:
+        extra_files = mgr.render_files(name, req.variables)
+        for rel_path, file_content in extra_files.items():
+            file_path = skill_dir / rel_path
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.write_text(file_content, encoding="utf-8")
+    except Exception as e:
+        logger.warning(f"Failed to write extra template files: {e}")
+
+    # Build config.json with template metadata + optional runtime config
+    skill_config: dict = {}
+
+    # Record template metadata so the editing chat can enforce directory structure
+    template_files = ["SKILL.md"] + sorted(extra_files.keys()) if extra_files else ["SKILL.md"]
+    skill_config["_template"] = {
+        "name": name,
+        "version": template.version,
+        "files": template_files,
+    }
+
     # For sql-assistant template, save runtime config (connection info)
     if name == "sql-assistant":
-        db_config = {
+        skill_config.update({
             "engine": req.variables.get("engine", "").lower(),
             "host": req.variables.get("host", ""),
             "port": int(req.variables.get("port", 0)),
             "username": req.variables.get("db_user", "default"),
             "password": req.variables.get("db_password", ""),
             "database": req.variables.get("database", ""),
-        }
-        save_skill_config(skill_dir, db_config)
+        })
+
+    save_skill_config(skill_dir, skill_config)
 
     logger.info(f"Skill '{skill_name}' created from template '{name}'")
     return CreateResponse(

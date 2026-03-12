@@ -28,3 +28,4 @@ class SkillTemplate:
     prompt: str
     llm_enhance_prompt: str = ""
     path: str = ""
+    files: dict[str, str] = field(default_factory=dict)  # relative_path -> template content

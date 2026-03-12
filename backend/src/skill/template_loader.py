@@ -48,6 +48,10 @@ def parse_template_yaml(path: str | Path) -> SkillTemplate:
     if not isinstance(frontmatter, dict):
         frontmatter = {}
 
+    files = data.get("files", {})
+    if not isinstance(files, dict):
+        files = {}
+
     return SkillTemplate(
         name=data["name"],
         description=data["description"],
@@ -59,6 +63,7 @@ def parse_template_yaml(path: str | Path) -> SkillTemplate:
         prompt=data["prompt"],
         llm_enhance_prompt=data.get("llm_enhance_prompt", ""),
         path=str(path),
+        files=files,
     )
 
 

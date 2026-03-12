@@ -54,6 +54,32 @@ class TemplateManager:
         body = _substitute(template.prompt, resolved)
         return _build_skill_md(frontmatter, body)
 
+    def render_files(self, name: str, variables: dict) -> dict[str, str]:
+        """Render all extra files defined in the template.
+
+        Returns a dict mapping relative file path to rendered content.
+        Does NOT include SKILL.md (use render() for that).
+        """
+        template = self.get_template(name)
+        if template is None:
+            raise ValueError(f"Template '{name}' not found")
+
+        resolved = {}
+        for var in template.variables:
+            value = variables.get(var.name)
+            if value is None or value == "":
+                if var.required and var.default is None:
+                    raise ValueError(f"Missing required variable '{var.name}'")
+                value = var.default if var.default is not None else ""
+            if var.type == "list" and isinstance(value, list):
+                value = "\n".join(f"- {item}" for item in value)
+            resolved[var.name] = str(value) if value is not None else ""
+
+        result = {}
+        for rel_path, content_template in template.files.items():
+            result[rel_path] = _substitute(content_template, resolved)
+        return result
+
     async def render_with_llm(
         self,
         name: str,

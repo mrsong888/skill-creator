@@ -1,0 +1,19 @@
+{
+  "_template": {
+    "name": "sql-assistant",
+    "version": "2.0",
+    "files": [
+      "SKILL.md",
+      "reference/plan.md",
+      "reference/report.md",
+      "reference/supplement.md",
+      "reference/work.md"
+    ]
+  },
+  "engine": "mysql",
+  "host": "localhost",
+  "port": 3306,
+  "username": "root",
+  "password": "root123",
+  "database": "devdb"
+}

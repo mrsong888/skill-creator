@@ -124,6 +124,56 @@ export async function deleteSkill(name: string): Promise<void> {
   await fetch(`${baseUrl()}/api/skills/${name}`, { method: "DELETE" });
 }
 
+export async function getSkillFiles(name: string): Promise<Record<string, string>> {
+  const res = await fetch(`${baseUrl()}/api/skills/${name}/files`);
+  if (!res.ok) throw new Error(`Failed to fetch skill files: ${res.statusText}`);
+  const json = await res.json();
+  return json.files;
+}
+
+export async function* streamSkillChat(
+  skillName: string,
+  message: string,
+  history: Array<{ role: string; content: string }>,
+): AsyncGenerator<SSEEvent> {
+  const response = await fetch(`${baseUrl()}/api/skills/${skillName}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, history }),
+  });
+
+  if (!response.ok) throw new Error(`Skill chat failed: ${response.status}`);
+  if (!response.body) throw new Error("No response body");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    let currentEvent = "";
+    for (const line of lines) {
+      if (line.startsWith("event: ")) {
+        currentEvent = line.slice(7).trim();
+      } else if (line.startsWith("data: ") && currentEvent) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          yield { type: currentEvent, data };
+        } catch {
+          // skip malformed JSON
+        }
+        currentEvent = "";
+      }
+    }
+  }
+}
+
 // ---------- Memory ----------
 
 export interface MemoryData {
@@ -289,11 +339,11 @@ export async function* renderTemplateLLM(name: string, variables: Record<string,
   }
 }
 
-export async function createFromTemplate(name: string, variables: Record<string, unknown>, skillName?: string): Promise<CreateResult> {
+export async function createFromTemplate(name: string, variables: Record<string, unknown>, skillName?: string, content?: string): Promise<CreateResult> {
   const res = await fetch(`${baseUrl()}/api/skill-templates/${name}/create`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ variables, skill_name: skillName }),
+    body: JSON.stringify({ variables, skill_name: skillName, content }),
   });
   if (!res.ok) {
     const err = await res.json();

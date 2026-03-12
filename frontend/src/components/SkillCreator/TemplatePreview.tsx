@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle, XCircle, Sparkles, Save, Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import {
@@ -114,7 +113,7 @@ export function TemplatePreview({ template, variables, onBack, onCreated }: Temp
     setSaving(true);
     setSaveError(null);
     try {
-      const result = await createFromTemplate(template.name, variables);
+      const result = await createFromTemplate(template.name, variables, undefined, content || undefined);
       onCreated(result.skill_name);
     } catch (e) {
       setSaveError((e as Error).message);
@@ -172,12 +171,12 @@ export function TemplatePreview({ template, variables, onBack, onCreated }: Temp
 
       {/* Content preview */}
       <div className="rounded-lg border border-input bg-muted/30 p-3 mb-4 max-h-[50vh] overflow-y-auto">
-        <div className="prose prose-sm max-w-none text-sm">
-          <ReactMarkdown>{content}</ReactMarkdown>
+        <pre className="whitespace-pre-wrap break-words text-xs font-mono leading-relaxed">
+          {content}
           {streaming && (
             <span className="inline-block w-0.5 h-4 bg-foreground/70 animate-pulse ml-0.5 align-text-bottom" />
           )}
-        </div>
+        </pre>
       </div>
 
       {/* Evaluation */}
