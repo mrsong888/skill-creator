@@ -48,24 +48,45 @@ BUILT_IN_TOOLS = [
 ]
 
 
+def _safe_resolve(base: Path, user_path: str) -> Path | None:
+    """Resolve a user-provided path and ensure it stays within the base directory."""
+    try:
+        resolved = (base / user_path).resolve()
+        base_resolved = base.resolve()
+        if not str(resolved).startswith(str(base_resolved)):
+            return None
+        return resolved
+    except (ValueError, OSError):
+        return None
+
+
 async def execute_tool(name: str, arguments: dict, workspace_root: Path | None = None) -> str:
     """Execute a built-in tool and return the result as a string."""
-    base = workspace_root or Path(".")
+    if workspace_root is None:
+        return "Error: No workspace available. File operations require an active workspace."
+
+    base = workspace_root
 
     if name == "read_file":
-        path = base / arguments["path"]
+        path = _safe_resolve(base, arguments["path"])
+        if path is None:
+            return "Error: Access denied. You can only access files within your workspace."
         if not path.exists():
             return f"Error: File not found: {arguments['path']}"
         return path.read_text(encoding="utf-8")
 
     elif name == "write_file":
-        path = base / arguments["path"]
+        path = _safe_resolve(base, arguments["path"])
+        if path is None:
+            return "Error: Access denied. You can only write files within your workspace."
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(arguments["content"], encoding="utf-8")
         return f"Written to {arguments['path']}"
 
     elif name == "list_files":
-        path = base / arguments["path"]
+        path = _safe_resolve(base, arguments["path"])
+        if path is None:
+            return "Error: Access denied. You can only list files within your workspace."
         if not path.exists():
             return f"Error: Directory not found: {arguments['path']}"
         entries = []

@@ -1,5 +1,5 @@
 import json
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from pathlib import Path
 from typing import Any
 
@@ -22,12 +22,16 @@ class AgentCore:
         system_prompt: str | None = None,
         tools: list[dict] | None = None,
         workspace_root: Path | None = None,
+        skill_tools: list[dict] | None = None,
+        skill_tool_executor: Callable | None = None,
         max_tool_rounds: int = 10,
     ) -> AsyncGenerator[dict[str, Any], None]:
         """Run the agent loop, yielding SSE-compatible events."""
         all_tools = list(BUILT_IN_TOOLS)
         if tools:
             all_tools.extend(tools)
+        if skill_tools:
+            all_tools.extend(skill_tools)
 
         llm_messages = []
         if system_prompt:
@@ -65,6 +69,9 @@ class AgentCore:
                     ],
                 })
 
+                # Build a set of skill tool names for routing
+                _skill_tool_names = {t["function"]["name"] for t in (skill_tools or []) if "function" in t}
+
                 for tc in assistant_msg.tool_calls:
                     yield {
                         "type": "tool_use",
@@ -72,7 +79,10 @@ class AgentCore:
                     }
 
                     args = json.loads(tc.function.arguments)
-                    result = await execute_tool(tc.function.name, args, workspace_root)
+                    if tc.function.name in _skill_tool_names and skill_tool_executor:
+                        result = await skill_tool_executor(tc.function.name, args)
+                    else:
+                        result = await execute_tool(tc.function.name, args, workspace_root)
 
                     yield {
                         "type": "tool_result",

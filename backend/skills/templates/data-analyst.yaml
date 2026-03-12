@@ -1,0 +1,47 @@
+name: data-analyst
+description: Data analysis skill for exploration and insight extraction
+category: analysis
+version: "1.0"
+llm_enhance: false
+
+variables:
+  - name: data_source
+    type: string
+    required: true
+    description: Data source type
+    options: [CSV files, JSON files, SQL database, API responses]
+  - name: analysis_goal
+    type: text
+    required: true
+    description: What insights are you looking for?
+  - name: output_format
+    type: string
+    required: false
+    default: markdown report
+    description: Output format
+    options: [markdown report, CSV summary, JSON results]
+
+frontmatter:
+  name: "data-analyst"
+  description: "Data analysis skill for ${data_source}"
+  allowed-tools:
+    - bash
+    - write_file
+    - read_file
+
+prompt: |
+  # Data Analyst
+
+  Analyze **${data_source}** data.
+
+  ## Goal
+  ${analysis_goal}
+
+  ## Process
+  1. Load data from ${data_source}
+  2. Explore structure and statistics
+  3. Clean and handle data issues
+  4. Analyze aligned with the goal
+  5. Present as ${output_format}
+
+  Use Python with pandas. Include key findings, methodology, and recommendations.

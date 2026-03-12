@@ -182,3 +182,144 @@ export async function uploadFile(threadId: string, file: File): Promise<{ filena
   });
   return res.json();
 }
+
+// ---------- Skill Templates ----------
+
+export interface TemplateVariable {
+  name: string;
+  type: "string" | "text" | "list";
+  required: boolean;
+  default: unknown;
+  description: string;
+  options: string[];
+}
+
+export interface TemplateSummary {
+  name: string;
+  description: string;
+  category: string;
+  version: string;
+  llm_enhance: boolean;
+  variables: TemplateVariable[];
+}
+
+export interface RenderResult {
+  content: string;
+  is_valid: boolean;
+  validation_message: string;
+}
+
+export interface CreateResult {
+  success: boolean;
+  skill_name: string;
+  message: string;
+  content: string;
+}
+
+export interface ValidateResult {
+  is_valid: boolean;
+  message: string;
+}
+
+export interface EvaluateResult {
+  score: number;
+  suggestions: string[];
+  details: Record<string, unknown>;
+}
+
+export async function listTemplates(): Promise<TemplateSummary[]> {
+  const res = await fetch(`${baseUrl()}/api/skill-templates`);
+  return res.json();
+}
+
+export async function getTemplate(name: string): Promise<TemplateSummary> {
+  const res = await fetch(`${baseUrl()}/api/skill-templates/${name}`);
+  return res.json();
+}
+
+export async function renderTemplate(name: string, variables: Record<string, unknown>): Promise<RenderResult> {
+  const res = await fetch(`${baseUrl()}/api/skill-templates/${name}/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ variables }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Render failed");
+  }
+  return res.json();
+}
+
+export async function* renderTemplateLLM(name: string, variables: Record<string, unknown>): AsyncGenerator<SSEEvent> {
+  const response = await fetch(`${baseUrl()}/api/skill-templates/${name}/render`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ variables }),
+  });
+
+  if (!response.ok) throw new Error(`Render failed: ${response.status}`);
+  if (!response.body) throw new Error("No response body");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    let currentEvent = "";
+    for (const line of lines) {
+      if (line.startsWith("event: ")) {
+        currentEvent = line.slice(7).trim();
+      } else if (line.startsWith("data: ") && currentEvent) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          yield { type: currentEvent, data };
+        } catch {
+          // skip malformed JSON
+        }
+        currentEvent = "";
+      }
+    }
+  }
+}
+
+export async function createFromTemplate(name: string, variables: Record<string, unknown>, skillName?: string): Promise<CreateResult> {
+  const res = await fetch(`${baseUrl()}/api/skill-templates/${name}/create`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ variables, skill_name: skillName }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Create failed");
+  }
+  return res.json();
+}
+
+export async function validateSkillMd(content: string): Promise<ValidateResult> {
+  const res = await fetch(`${baseUrl()}/api/skill-templates/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  return res.json();
+}
+
+export async function evaluateSkillQuality(content: string): Promise<EvaluateResult> {
+  const res = await fetch(`${baseUrl()}/api/skill-templates/evaluate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.detail || "Evaluate failed");
+  }
+  return res.json();
+}

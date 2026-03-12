@@ -4,9 +4,10 @@ import { cn } from "@/utils/cn";
 interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
+  isStreaming?: boolean;
 }
 
-export function ChatMessage({ role, content }: ChatMessageProps) {
+export function ChatMessage({ role, content, isStreaming }: ChatMessageProps) {
   const isUser = role === "user";
 
   return (
@@ -22,6 +23,9 @@ export function ChatMessage({ role, content }: ChatMessageProps) {
         ) : (
           <div className="prose prose-sm max-w-none dark:prose-invert">
             <ReactMarkdown>{content}</ReactMarkdown>
+            {isStreaming && (
+              <span className="inline-block w-0.5 h-4 bg-foreground/70 animate-pulse ml-0.5 align-text-bottom" />
+            )}
           </div>
         )}
       </div>

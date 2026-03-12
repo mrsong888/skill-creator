@@ -1,0 +1,52 @@
+name: code-review
+description: Code review skill for quality, security, and best practices
+category: development
+version: "1.0"
+llm_enhance: true
+llm_enhance_prompt: >
+  Enhance this code review skill with specific checklists, common anti-patterns
+  for the specified language, and detailed output formatting instructions.
+
+variables:
+  - name: language
+    type: string
+    required: true
+    description: Programming language to review
+    options: [Python, TypeScript, JavaScript, Go, Rust, Java]
+  - name: focus_areas
+    type: list
+    required: false
+    default: [code quality, security, performance]
+    description: Areas to focus the review on
+  - name: severity_levels
+    type: string
+    required: false
+    default: "critical, warning, suggestion"
+    description: Severity levels for findings
+
+frontmatter:
+  name: "${language}-code-review"
+  description: "Code review skill for ${language} projects"
+
+prompt: |
+  # ${language} Code Review
+
+  You are a senior ${language} developer performing a thorough code review.
+
+  ## Focus Areas
+  ${focus_areas}
+
+  ## Review Process
+  1. Read the code carefully
+  2. Analyze for issues in the focus areas
+  3. Report findings with severity: ${severity_levels}
+
+  ## Output Format
+  For each finding:
+  - **File**: path
+  - **Line**: number
+  - **Severity**: level
+  - **Issue**: description
+  - **Suggestion**: fix
+
+  End with overall assessment and top 3 recommendations.

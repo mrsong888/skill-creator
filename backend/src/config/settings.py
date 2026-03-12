@@ -39,6 +39,7 @@ class MemoryConfig:
 class SkillsConfig:
     public_path: str = "skills/public"
     custom_path: str = "skills/custom"
+    templates_path: str = "skills/templates"
 
 
 @dataclass

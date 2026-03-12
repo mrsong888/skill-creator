@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Globe, MessageSquare, Puzzle, Settings } from "lucide-react";
+import { Check, Globe, Loader2, MessageSquare, Puzzle, Settings } from "lucide-react";
 import { ChatPanel } from "@/components/Chat/ChatPanel";
 import { ThreadList } from "@/components/Chat/ThreadList";
 import { useChatStore } from "@/stores/chatStore";
@@ -12,27 +12,47 @@ type View = "chat" | "threads";
 export function SidePanel() {
   const [view, setView] = useState<View>("chat");
   const [showSkillPicker, setShowSkillPicker] = useState(false);
+  const [captureStatus, setCaptureStatus] = useState<"idle" | "loading" | "done">("idle");
   const { boundSkill, setBoundSkill, setPageContext } = useChatStore();
   const { skills, loadSkills } = useSkillStore();
 
   const capturePageContext = async () => {
+    if (captureStatus === "loading") return;
+    setCaptureStatus("loading");
+
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab?.id) {
-        const results = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            const title = document.title;
-            const text = document.body.innerText.slice(0, 4000);
-            return `Title: ${title}\n\nContent:\n${text}`;
-          },
-        });
-        if (results?.[0]?.result) {
-          setPageContext(results[0].result);
+      // Use message passing through background to content script
+      const response = await chrome.runtime.sendMessage({ type: "GET_PAGE_CONTENT" });
+      if (response?.title && response?.content) {
+        const context = `Title: ${response.title}\nURL: ${response.url}\n\nContent:\n${response.content}`;
+        setPageContext(context);
+        setCaptureStatus("done");
+        setTimeout(() => setCaptureStatus("idle"), 2000);
+      } else {
+        // Fallback: try chrome.scripting directly
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tab?.id) {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+              const title = document.title;
+              const url = window.location.href;
+              const text = document.body.innerText.slice(0, 4000);
+              return { title, url, content: text };
+            },
+          });
+          if (results?.[0]?.result) {
+            const r = results[0].result;
+            const context = `Title: ${r.title}\nURL: ${r.url}\n\nContent:\n${r.content}`;
+            setPageContext(context);
+            setCaptureStatus("done");
+            setTimeout(() => setCaptureStatus("idle"), 2000);
+          }
         }
       }
     } catch (err) {
       console.error("Failed to capture page:", err);
+      setCaptureStatus("idle");
     }
   };
 
@@ -65,8 +85,20 @@ export function SidePanel() {
           </Button>
         </div>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={capturePageContext} title="Capture page content">
-            <Globe className="h-4 w-4" />
+          <Button
+            variant={captureStatus === "done" ? "secondary" : "ghost"}
+            size="icon"
+            onClick={capturePageContext}
+            disabled={captureStatus === "loading"}
+            title="Capture page content"
+          >
+            {captureStatus === "loading" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : captureStatus === "done" ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Globe className="h-4 w-4" />
+            )}
           </Button>
           <Button
             variant={boundSkill ? "secondary" : "ghost"}

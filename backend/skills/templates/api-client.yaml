@@ -1,0 +1,49 @@
+name: api-client
+description: API integration skill with auth, requests, and response handling
+category: integration
+version: "1.0"
+llm_enhance: false
+
+variables:
+  - name: api_name
+    type: string
+    required: true
+    description: API name
+  - name: base_url
+    type: string
+    required: true
+    description: Base URL of the API
+  - name: auth_method
+    type: string
+    required: false
+    default: Bearer Token
+    description: Authentication method
+    options: [Bearer Token, API Key (header), Basic Auth, OAuth2, None]
+  - name: endpoints
+    type: text
+    required: false
+    default: ""
+    description: Key endpoints (one per line)
+
+frontmatter:
+  name: "${api_name}-client"
+  description: "API client skill for ${api_name}"
+  allowed-tools:
+    - bash
+
+prompt: |
+  # ${api_name} API Client
+
+  Integrate with **${api_name}** API.
+
+  - **Base URL**: ${base_url}
+  - **Auth**: ${auth_method}
+
+  ## Endpoints
+  ${endpoints}
+
+  ## Guidelines
+  1. Set up ${auth_method} authentication
+  2. Use curl or Python requests
+  3. Handle errors and rate limits
+  4. Never hardcode credentials

@@ -7,5 +7,7 @@ backend/data/
 node_modules/
 dist/
 .env
-node_modules/
+.DS_Store
+.claude/
+backend/config.yaml
 frontend/dist/

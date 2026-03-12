@@ -1,18 +1,15 @@
 import { useState } from "react";
-import { Brain, Puzzle, Settings, Wand2 } from "lucide-react";
+import { Puzzle, Wand2 } from "lucide-react";
 import { SkillListPanel } from "@/components/SkillList/SkillListPanel";
 import { SkillCreator } from "@/components/SkillCreator/SkillCreator";
-import { MemoryPanel } from "@/components/MemoryPanel/MemoryPanel";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/utils/cn";
 
-type Tab = "skills" | "creator" | "memory" | "settings";
+type Tab = "skills" | "creator";
 
 const tabs: { id: Tab; label: string; icon: typeof Puzzle }[] = [
   { id: "skills", label: "Skills", icon: Puzzle },
   { id: "creator", label: "Creator", icon: Wand2 },
-  { id: "memory", label: "Memory", icon: Brain },
-  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export function Options() {
@@ -48,41 +45,7 @@ export function Options() {
       <main className="flex-1 overflow-y-auto">
         {activeTab === "skills" && <SkillListPanel />}
         {activeTab === "creator" && <SkillCreator />}
-        {activeTab === "memory" && <MemoryPanel />}
-        {activeTab === "settings" && <SettingsPanel />}
       </main>
-    </div>
-  );
-}
-
-function SettingsPanel() {
-  const [backendUrl, setBackendUrl] = useState(localStorage.getItem("backend_url") || "http://localhost:8001");
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    localStorage.setItem("backend_url", backendUrl);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  return (
-    <div className="p-4">
-      <h1 className="mb-4 text-xl font-bold">Settings</h1>
-      <div className="space-y-4">
-        <div>
-          <label className="mb-1 block text-sm font-medium">Backend URL</label>
-          <input
-            type="text"
-            className="w-full max-w-md rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={backendUrl}
-            onChange={(e) => setBackendUrl(e.target.value)}
-          />
-          <p className="mt-1 text-xs text-muted-foreground">The URL of the Agent Skill backend server.</p>
-        </div>
-        <Button onClick={handleSave}>
-          {saved ? "Saved!" : "Save Settings"}
-        </Button>
-      </div>
     </div>
   );
 }

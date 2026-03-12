@@ -13,6 +13,10 @@ from src.db.repository import MessageRepository, ThreadRepository
 from src.memory.injector import format_memory_for_injection
 from src.memory.store import MemoryStore
 from src.skill.manager import SkillManager
+from src.skill.runtime_config import load_skill_config
+from src.sql_assistant.connectors import create_connector
+from src.sql_assistant.tools import execute_sql_tool, get_sql_tools
+from src.workspace.manager import WorkspaceManager
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -77,12 +81,36 @@ async def chat(
     )
 
     agent = get_agent()
+    ws_mgr = WorkspaceManager()
+    ws_dirs = ws_mgr.ensure_thread_dirs(thread.id)
+    workspace_root = ws_dirs["workspace"]
+
+    # Load SQL tools if skill uses sql_* tools
+    sql_tools = None
+    sql_tool_executor = None
+    skill_obj = None
+    if skill_name:
+        mgr = SkillManager(public_path=settings.skills.public_path, custom_path=settings.skills.custom_path)
+        skill_obj = mgr.get_skill(skill_name)
+    if skill_obj and any(t.startswith("sql_") for t in (skill_obj.allowed_tools or [])):
+        from pathlib import Path
+
+        skill_config = load_skill_config(Path(skill_obj.path))
+        if skill_config:
+            sql_connector = create_connector(skill_config["engine"], skill_config)
+            sql_tools = get_sql_tools()
+
+            async def sql_tool_executor(name, args):
+                return await execute_sql_tool(name, args, sql_connector)
 
     async def event_generator():
         full_response = ""
         yield {"event": "message_start", "data": json.dumps({"thread_id": thread.id})}
 
-        async for event in agent.run(messages, system_prompt=system_prompt):
+        async for event in agent.run(
+            messages, system_prompt=system_prompt, workspace_root=workspace_root,
+            skill_tools=sql_tools, skill_tool_executor=sql_tool_executor,
+        ):
             event_type = event["type"]
             yield {"event": event_type, "data": json.dumps(event["data"])}
 

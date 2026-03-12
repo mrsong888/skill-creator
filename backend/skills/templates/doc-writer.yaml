@@ -1,0 +1,42 @@
+name: doc-writer
+description: Documentation writing skill for clear, comprehensive docs
+category: documentation
+version: "1.0"
+llm_enhance: true
+llm_enhance_prompt: >
+  Enhance with specific guidelines for the chosen documentation type,
+  templates, examples, and best practices.
+
+variables:
+  - name: doc_type
+    type: string
+    required: true
+    description: Type of documentation
+    options: [API Reference, User Guide, Architecture Document, README, Changelog]
+  - name: project_name
+    type: string
+    required: true
+    description: Project name
+  - name: audience
+    type: string
+    required: false
+    default: developers
+    description: Target audience
+
+frontmatter:
+  name: "${project_name}-doc-writer"
+  description: "Documentation writer for ${project_name} - ${doc_type}"
+
+prompt: |
+  # Documentation Writer: ${doc_type}
+
+  Create ${doc_type} documentation for **${project_name}**.
+
+  ## Target Audience
+  ${audience}
+
+  ## Guidelines
+  1. Use clear language appropriate for ${audience}
+  2. Follow standard ${doc_type} conventions
+  3. Include practical examples
+  4. Add table of contents for long documents

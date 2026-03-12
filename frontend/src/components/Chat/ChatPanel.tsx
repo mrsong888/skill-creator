@@ -3,13 +3,29 @@ import { useChatStore } from "@/stores/chatStore";
 import { ChatInput } from "./ChatInput";
 import { ChatMessage } from "./ChatMessage";
 
+function ThinkingIndicator() {
+  return (
+    <div className="flex gap-3 px-4 py-3 justify-start">
+      <div className="max-w-[85%] rounded-lg px-4 py-3 bg-muted text-foreground">
+        <div className="flex items-center gap-1.5">
+          <div className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+          <div className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+          <div className="h-2 w-2 rounded-full bg-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ChatPanel() {
   const { messages, streamingContent, isStreaming, sendMessage } = useChatStore();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
+  }, [messages, streamingContent, isStreaming]);
+
+  const showThinking = isStreaming && !streamingContent;
 
   return (
     <div className="flex h-full flex-col">
@@ -23,7 +39,8 @@ export function ChatPanel() {
         {messages.map((msg) => (
           <ChatMessage key={msg.id} role={msg.role as "user" | "assistant"} content={msg.content} />
         ))}
-        {streamingContent && <ChatMessage role="assistant" content={streamingContent} />}
+        {showThinking && <ThinkingIndicator />}
+        {streamingContent && <ChatMessage role="assistant" content={streamingContent} isStreaming />}
         <div ref={bottomRef} />
       </div>
 
